@@ -10,6 +10,8 @@ export default defineConfig({
       '/analyze': 'http://localhost:8000',
       '/results': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
+      '/compare': 'http://localhost:8000',
+      '/chat': 'http://localhost:8000',
     }
   }
 })

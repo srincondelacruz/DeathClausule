@@ -46,3 +46,38 @@ export interface ResultsResponse {
   graph: Graph
   report: ReportEntry[]
 }
+
+// --- Comparison types ---
+
+export interface SimilarPair {
+  clause_a: GraphNode
+  clause_b: GraphNode
+  similarity_score: number
+  differences: string
+}
+
+export interface ComparisonResponse {
+  doc_a: string
+  doc_b: string
+  exclusive_a: GraphNode[]
+  exclusive_b: GraphNode[]
+  similar_pairs: SimilarPair[]
+  executive_summary: string
+}
+
+// --- Chat types ---
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatRequest {
+  session_id: string
+  message: string
+}
+
+export interface ChatResponse {
+  reply: string
+  sources: GraphNode[]
+}
