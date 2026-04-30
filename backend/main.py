@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import upload, analysis, results  # noqa: E402
+from routers import upload, analysis, results, comparison, chat  # noqa: E402
 
 app = FastAPI(title="DeathClausule API", version="1.0.0")
 
@@ -18,6 +18,8 @@ app.add_middleware(
 app.include_router(upload.router)
 app.include_router(analysis.router)
 app.include_router(results.router)
+app.include_router(comparison.router)
+app.include_router(chat.router)
 
 
 @app.get("/health")

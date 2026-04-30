@@ -59,3 +59,39 @@ class ResultsResponse(BaseModel):
     status: str
     graph: Graph
     report: List[ReportEntry]
+
+
+# --- Comparison schemas ---
+
+class ExclusiveClause(BaseModel):
+    clause: GraphNode
+    doc: str
+
+class SimilarPair(BaseModel):
+    clause_a: GraphNode
+    clause_b: GraphNode
+    similarity_score: float
+    differences: str
+
+class ComparisonResponse(BaseModel):
+    doc_a: str
+    doc_b: str
+    exclusive_a: List[GraphNode]
+    exclusive_b: List[GraphNode]
+    similar_pairs: List[SimilarPair]
+    executive_summary: str
+
+
+# --- Chat schemas ---
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+
+class ChatResponse(BaseModel):
+    reply: str
+    sources: List[GraphNode]
