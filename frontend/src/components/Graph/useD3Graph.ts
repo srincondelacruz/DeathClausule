@@ -22,6 +22,15 @@ interface UseD3GraphOptions {
   onEdgeHover: (explanation: string | null) => void
 }
 
+const DOC_PALETTE_LIGHT = ['#0a0a0a', '#525252', '#a3a3a3', '#404040', '#737373', '#262626']
+const DOC_PALETTE_DARK = ['#ffffff', '#d4d4d4', '#737373', '#a3a3a3', '#e5e5e5', '#525252']
+
+function severityColor(s: number): string {
+  if (s >= 7) return '#ef4444'
+  if (s >= 4) return '#fb923c'
+  return '#eab308'
+}
+
 export function useD3Graph(
   svgRef: React.RefObject<SVGSVGElement | null>,
   { graph, onNodeClick, onEdgeHover }: UseD3GraphOptions
@@ -33,10 +42,30 @@ export function useD3Graph(
     svg.selectAll('*').remove()
 
     const width = svgRef.current.clientWidth || 800
-    const height = 500
+    const height = 520
+    const isDark = document.documentElement.classList.contains('dark')
+    const dotColor = isDark ? '#1f1f1f' : '#e5e7eb'
+    const labelColor = isDark ? '#a3a3a3' : '#374151'
+    const nodeFill = isDark ? '#0a0a0a' : '#ffffff'
 
-    const colorScale = d3.scaleOrdinal(d3.schemeTableau10)
-    const strokeWidth = (severity: number) => 1 + (severity / 10) * 8
+    svg.attr('viewBox', `0 0 ${width} ${height}`)
+
+    // ───── Defs: drop shadow + arrowheads ─────
+    const defs = svg.append('defs')
+
+    const filter = defs.append('filter')
+      .attr('id', 'node-shadow')
+      .attr('x', '-50%').attr('y', '-50%')
+      .attr('width', '200%').attr('height', '200%')
+    filter.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 3)
+    filter.append('feOffset').attr('dx', 0).attr('dy', 2).attr('result', 'offsetblur')
+    filter.append('feComponentTransfer').append('feFuncA').attr('type', 'linear').attr('slope', 0.18)
+    const merge = filter.append('feMerge')
+    merge.append('feMergeNode')
+    merge.append('feMergeNode').attr('in', 'SourceGraphic')
+
+    const colorScale = d3.scaleOrdinal<string, string>().range(isDark ? DOC_PALETTE_DARK : DOC_PALETTE_LIGHT)
+    const strokeWidth = (severity: number) => 1 + (severity / 10) * 5
 
     const nodes: SimNode[] = graph.nodes.map(n => ({ ...n }))
     const nodeById = new Map(nodes.map(n => [n.id, n]))
@@ -47,6 +76,14 @@ export function useD3Graph(
       explanation: e.explanation,
     }))
 
+    // Subtle background grid
+    const bgPattern = defs.append('pattern')
+      .attr('id', 'bg-dots')
+      .attr('width', 24).attr('height', 24)
+      .attr('patternUnits', 'userSpaceOnUse')
+    bgPattern.append('circle').attr('cx', 1).attr('cy', 1).attr('r', 1).attr('fill', dotColor)
+    svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#bg-dots)').attr('opacity', 0.5)
+
     const g = svg.append('g')
 
     svg.call(
@@ -55,72 +92,90 @@ export function useD3Graph(
         .on('zoom', (event) => g.attr('transform', event.transform))
     )
 
+    // Curved links
     const link = g.append('g')
-      .selectAll<SVGLineElement, SimLink>('line')
+      .selectAll<SVGPathElement, SimLink>('path')
       .data(links)
-      .join('line')
-      .attr('stroke', '#ef4444')
-      .attr('stroke-opacity', 0.7)
+      .join('path')
+      .attr('class', 'd3-link')
+      .attr('fill', 'none')
+      .attr('stroke', d => severityColor(d.severity))
+      .attr('stroke-opacity', 0.55)
       .attr('stroke-width', d => strokeWidth(d.severity))
+      .attr('stroke-linecap', 'round')
       .style('cursor', 'pointer')
-      .on('mouseenter', (_event, d) => onEdgeHover(d.explanation))
-      .on('mouseleave', () => onEdgeHover(null))
+      .on('mouseenter', function (_event, d) {
+        d3.select(this).attr('stroke-opacity', 1).attr('stroke-width', strokeWidth(d.severity) + 1.5)
+        onEdgeHover(d.explanation)
+      })
+      .on('mouseleave', function (_event, d) {
+        d3.select(this).attr('stroke-opacity', 0.55).attr('stroke-width', strokeWidth(d.severity))
+        onEdgeHover(null)
+      })
 
-    const node = g.append('g')
-      .selectAll<SVGCircleElement, SimNode>('circle')
+    // Nodes with white halo + colored core
+    const nodeG = g.append('g')
+      .selectAll<SVGGElement, SimNode>('g')
       .data(nodes)
-      .join('circle')
-      .attr('r', 10)
-      .attr('fill', d => colorScale(d.doc))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 2)
+      .join('g')
+      .attr('class', 'd3-node')
       .style('cursor', 'pointer')
       .on('click', (_event, d) => onNodeClick(d))
 
-    const label = g.append('g')
-      .selectAll<SVGTextElement, SimNode>('text')
-      .data(nodes)
-      .join('text')
+    nodeG.append('circle')
+      .attr('r', 18)
+      .attr('fill', nodeFill)
+      .attr('stroke', d => colorScale(d.doc))
+      .attr('stroke-width', 1.5)
+      .attr('filter', 'url(#node-shadow)')
+
+    nodeG.append('circle')
+      .attr('r', 7)
+      .attr('fill', d => colorScale(d.doc))
+
+    nodeG.append('text')
       .text(d => `${d.number}`)
       .attr('font-size', 10)
+      .attr('font-weight', 600)
       .attr('text-anchor', 'middle')
-      .attr('dy', -14)
-      .attr('fill', '#374151')
+      .attr('dy', 32)
+      .attr('fill', labelColor)
+      .attr('font-family', '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif')
       .style('pointer-events', 'none')
 
+    nodeG.on('mouseenter', function () {
+      d3.select(this).select('circle').transition().duration(150).attr('r', 22)
+    }).on('mouseleave', function () {
+      d3.select(this).select('circle').transition().duration(150).attr('r', 18)
+    })
+
     const simulation = d3.forceSimulation<SimNode>(nodes)
-      .force('link', d3.forceLink<SimNode, SimLink>(links).id(d => d.id).distance(150))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', d3.forceLink<SimNode, SimLink>(links).id(d => d.id).distance(160).strength(0.5))
+      .force('charge', d3.forceManyBody().strength(-380))
       .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collide', d3.forceCollide().radius(28))
       .on('tick', () => {
-        link
-          .attr('x1', d => (d.source as SimNode).x ?? 0)
-          .attr('y1', d => (d.source as SimNode).y ?? 0)
-          .attr('x2', d => (d.target as SimNode).x ?? 0)
-          .attr('y2', d => (d.target as SimNode).y ?? 0)
-        node
-          .attr('cx', d => d.x ?? 0)
-          .attr('cy', d => d.y ?? 0)
-        label
-          .attr('x', d => d.x ?? 0)
-          .attr('y', d => d.y ?? 0)
+        link.attr('d', d => {
+          const s = d.source as SimNode
+          const t = d.target as SimNode
+          const dx = (t.x ?? 0) - (s.x ?? 0)
+          const dy = (t.y ?? 0) - (s.y ?? 0)
+          const dr = Math.sqrt(dx * dx + dy * dy) * 1.6
+          return `M${s.x},${s.y}A${dr},${dr} 0 0,1 ${t.x},${t.y}`
+        })
+        nodeG.attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`)
       })
 
-    node.call(
-      d3.drag<SVGCircleElement, SimNode>()
+    nodeG.call(
+      d3.drag<SVGGElement, SimNode>()
         .on('start', (event, d) => {
           if (!event.active) simulation.alphaTarget(0.3).restart()
-          d.fx = d.x
-          d.fy = d.y
+          d.fx = d.x; d.fy = d.y
         })
-        .on('drag', (event, d) => {
-          d.fx = event.x
-          d.fy = event.y
-        })
+        .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y })
         .on('end', (event, d) => {
           if (!event.active) simulation.alphaTarget(0)
-          d.fx = null
-          d.fy = null
+          d.fx = null; d.fy = null
         })
     )
 
