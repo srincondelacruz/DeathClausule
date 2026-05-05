@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -149,6 +150,28 @@ html, body {
   to { transform: translateX(-50%); }
 }
 .animate-marquee { animation: marquee 28s linear infinite; }
+
+/* ───────── Wordmark shimmer ───────── */
+.wordmark-shimmer {
+  background: linear-gradient(110deg, #a3a3a3 0%, #a3a3a3 30%, #0a0a0a 48%, #0a0a0a 52%, #a3a3a3 70%, #a3a3a3 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wordmark-shimmer 7s linear infinite;
+}
+.dark .wordmark-shimmer {
+  background: linear-gradient(110deg, #525252 0%, #525252 30%, #ffffff 48%, #ffffff 52%, #525252 70%, #525252 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wordmark-shimmer 7s linear infinite;
+}
+@keyframes wordmark-shimmer {
+  0%   { background-position: 150% 0; }
+  100% { background-position: -150% 0; }
+}
 
 .mask-fade {
   mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
