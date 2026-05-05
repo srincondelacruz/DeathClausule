@@ -1,5 +1,6 @@
 import os
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import AzureOpenAI
 from models.schemas import Clause, GraphEdge, GraphNode, ReportEntry
 from services.vector_store import query_similar
@@ -41,17 +42,23 @@ A contradiction exists when following both clauses simultaneously is impossible 
 
 
 def detect_contradictions(session_id: str, clauses: list[Clause]) -> tuple[list[GraphEdge], list[ReportEntry]]:
-    threshold = float(os.getenv("SIMILARITY_THRESHOLD", "0.75"))
+    threshold = float(os.getenv("SIMILARITY_THRESHOLD", "0.55"))
     distance_threshold = 1 - threshold
 
     embeddings = generate_embeddings(clauses)
 
     checked_pairs: set[frozenset] = set()
-    edges: list[GraphEdge] = []
-    report: list[ReportEntry] = []
+    pairs_to_check: list[tuple[Clause, str, dict]] = []
+
+    unique_docs = {c.doc_id for c in clauses}
+    cross_doc_only = len(unique_docs) > 1
 
     for clause, embedding in zip(clauses, embeddings):
-        similar = query_similar(session_id, embedding, exclude_doc_id=clause.doc_id)
+        similar = query_similar(
+            session_id, embedding,
+            exclude_clause_id=clause.id,
+            exclude_doc_id=clause.doc_id if cross_doc_only else None,
+        )
         for candidate in similar:
             if candidate["distance"] > distance_threshold:
                 continue
@@ -59,38 +66,53 @@ def detect_contradictions(session_id: str, clauses: list[Clause]) -> tuple[list[
             if pair in checked_pairs:
                 continue
             checked_pairs.add(pair)
+            pairs_to_check.append((clause, candidate["text"], candidate["metadata"], candidate["id"]))
 
-            result = check_contradiction(clause, candidate["text"], candidate["metadata"])
-            if result.get("contradiction"):
-                severity = int(result.get("severity", 5))
-                explanation = result.get("explanation", "")
+    edges: list[GraphEdge] = []
+    report: list[ReportEntry] = []
 
-                node_a = GraphNode(
+    max_workers = min(10, len(pairs_to_check)) if pairs_to_check else 1
+
+    def check_pair(args: tuple) -> tuple | None:
+        clause, b_text, b_meta, b_id = args
+        result = check_contradiction(clause, b_text, b_meta)
+        if result.get("contradiction"):
+            return (clause, b_text, b_meta, b_id, result)
+        return None
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(check_pair, p): p for p in pairs_to_check}
+        for future in as_completed(futures):
+            outcome = future.result()
+            if outcome is None:
+                continue
+            clause, b_text, b_meta, b_id, result = outcome
+            severity = int(result.get("severity", 5))
+            explanation = result.get("explanation", "")
+            edges.append(GraphEdge(
+                source=clause.id,
+                target=b_id,
+                severity=severity,
+                explanation=explanation,
+            ))
+            report.append(ReportEntry(
+                clause_a=GraphNode(
                     id=clause.id,
                     doc=clause.doc_name,
                     number=clause.clause_number,
                     title=clause.clause_title,
                     text=clause.text,
-                )
-                node_b = GraphNode(
-                    id=candidate["id"],
-                    doc=candidate["metadata"].get("doc_name", ""),
-                    number=candidate["metadata"].get("clause_number", ""),
-                    title=candidate["metadata"].get("clause_title", ""),
-                    text=candidate["text"],
-                )
-                edges.append(GraphEdge(
-                    source=clause.id,
-                    target=candidate["id"],
-                    severity=severity,
-                    explanation=explanation,
-                ))
-                report.append(ReportEntry(
-                    clause_a=node_a,
-                    clause_b=node_b,
-                    explanation=explanation,
-                    severity=severity,
-                ))
+                ),
+                clause_b=GraphNode(
+                    id=b_id,
+                    doc=b_meta.get("doc_name", ""),
+                    number=b_meta.get("clause_number", ""),
+                    title=b_meta.get("clause_title", ""),
+                    text=b_text,
+                ),
+                explanation=explanation,
+                severity=severity,
+            ))
 
     report.sort(key=lambda x: x.severity, reverse=True)
     return edges, report

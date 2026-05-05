@@ -32,22 +32,30 @@ def store_clauses(session_id: str, clauses: list[Clause], embeddings: list[list[
     )
 
 
-def query_similar(session_id: str, embedding: list[float], exclude_doc_id: str, top_n: int = 10) -> list[dict]:
+def query_similar(session_id: str, embedding: list[float], exclude_clause_id: str, exclude_doc_id: str | None = None, top_n: int = 10) -> list[dict]:
     collection = get_or_create_collection(session_id)
-    results = collection.query(
-        query_embeddings=[embedding],
-        n_results=min(top_n, collection.count()),
-        where={"doc_id": {"$ne": exclude_doc_id}},
-    )
+    count = collection.count()
+    if count <= 1:
+        return []
+    where = {"doc_id": {"$ne": exclude_doc_id}} if exclude_doc_id else None
+    query_kwargs: dict = {
+        "query_embeddings": [embedding],
+        "n_results": min(top_n + 1, count),
+    }
+    if where:
+        query_kwargs["where"] = where
+    results = collection.query(**query_kwargs)
     similar = []
     for i, doc_id in enumerate(results["ids"][0]):
+        if doc_id == exclude_clause_id:
+            continue
         similar.append({
             "id": doc_id,
             "text": results["documents"][0][i],
             "metadata": results["metadatas"][0][i],
             "distance": results["distances"][0][i],
         })
-    return similar
+    return similar[:top_n]
 
 
 def delete_collection(session_id: str) -> None:
