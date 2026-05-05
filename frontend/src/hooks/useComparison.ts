@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { compareContracts, sendChatMessage } from '../api/client'
 import type { ComparisonResponse, ChatMessage } from '../types/api'
 
@@ -10,14 +10,21 @@ interface State {
   error: string | null
 }
 
+const INITIAL: State = {
+  comparison: null,
+  messages: [],
+  loadingComparison: false,
+  loadingChat: false,
+  error: null,
+}
+
 export function useComparison(sessionId: string | null) {
-  const [state, setState] = useState<State>({
-    comparison: null,
-    messages: [],
-    loadingComparison: false,
-    loadingChat: false,
-    error: null,
-  })
+  const [state, setState] = useState<State>(INITIAL)
+
+  // Reset everything when session changes (new analysis or reset)
+  useEffect(() => {
+    setState(INITIAL)
+  }, [sessionId])
 
   const runComparison = useCallback(async () => {
     if (!sessionId) return
