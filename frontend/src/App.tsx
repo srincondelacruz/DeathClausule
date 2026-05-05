@@ -8,6 +8,7 @@ import Reveal from './components/Reveal'
 import InteractiveBackground from './components/InteractiveBackground'
 import HeroAnimation from './components/HeroAnimation'
 import ThemeToggle from './components/ThemeToggle'
+import Logo, { Wordmark } from './components/Logo'
 import SignInModal, { useAuth } from './components/SignInModal'
 import { useAnalysis } from './hooks/useAnalysis'
 import { useComparison } from './hooks/useComparison'
@@ -67,18 +68,19 @@ export default function App() {
       {/* Sticky header */}
       <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled ? 'glass border-b border-gray-100 dark:border-neutral-800' : 'bg-transparent'}`}>
         <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-xl bg-gray-900 dark:bg-white flex items-center justify-center shadow-sm">
-                <span className="text-white dark:text-gray-900 font-semibold text-[10px] tracking-tight">DC</span>
-              </div>
-              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 pulse-dot" />
-            </div>
-            <div className="leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight text-gray-900 dark:text-neutral-100">DeathClausule</h1>
+          <button
+            onClick={() => { reset(); didAutoCompare.current = false }}
+            className="flex items-center gap-3 hover:opacity-75 transition-opacity"
+            aria-label="Go to home"
+          >
+            <Logo size={34} className="shadow-sm rounded-[11px]" />
+            <div className="leading-tight text-left">
+              <h1 className="text-sm tracking-tight text-gray-900 dark:text-neutral-100">
+                <Wordmark />
+              </h1>
               <p className="text-[11px] text-gray-400 dark:text-neutral-500 -mt-0.5">Legal contradiction detection</p>
             </div>
-          </div>
+          </button>
           <div className="flex items-center gap-2">
             {step === 'complete' && (
               <button
@@ -280,7 +282,7 @@ export default function App() {
             {/* Tabs */}
             <Reveal delay={80}>
               <div className="flex gap-1 p-1 bg-gray-100/60 dark:bg-neutral-900 rounded-2xl w-fit">
-                {TABS.map(tab => (
+                {TABS.filter(tab => action === 'contradictions' ? tab.id !== 'comparison' : true).map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -296,33 +298,27 @@ export default function App() {
               </div>
             </Reveal>
 
-            <div key={activeTab} className="animate-fade-in">
-              {activeTab === 'contradictions' && (
-                <div className="flex flex-col gap-12">
-                  <Reveal><GraphPlaceholder graph={results.graph} /></Reveal>
-                  <Reveal delay={80}><ReportPanel entries={results.report} /></Reveal>
-                </div>
-              )}
+            <div>
+              <div className={activeTab === 'contradictions' ? 'flex flex-col gap-12' : 'hidden'}>
+                <Reveal><GraphPlaceholder graph={results.graph} /></Reveal>
+                <Reveal delay={80}><ReportPanel entries={results.report} /></Reveal>
+              </div>
 
-              {activeTab === 'comparison' && (
-                <Reveal>
-                  <ComparisonPanel
-                    comparison={comparison}
-                    loading={loadingComparison}
-                    onRun={runComparison}
-                  />
-                </Reveal>
-              )}
+              <div className={activeTab === 'comparison' ? 'block' : 'hidden'}>
+                <ComparisonPanel
+                  comparison={comparison}
+                  loading={loadingComparison}
+                  onRun={runComparison}
+                />
+              </div>
 
-              {activeTab === 'chat' && (
-                <Reveal>
-                  <ChatPanel
-                    messages={messages}
-                    loading={loadingChat}
-                    onSend={sendMessage}
-                  />
-                </Reveal>
-              )}
+              <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
+                <ChatPanel
+                  messages={messages}
+                  loading={loadingChat}
+                  onSend={sendMessage}
+                />
+              </div>
             </div>
           </div>
         )}
