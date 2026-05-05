@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import UploadPanel from './components/Upload/UploadPanel'
 import GraphPlaceholder from './components/Graph/GraphPlaceholder'
 import ReportPanel from './components/Report/ReportPanel'
@@ -8,8 +8,10 @@ import Reveal from './components/Reveal'
 import InteractiveBackground from './components/InteractiveBackground'
 import HeroAnimation from './components/HeroAnimation'
 import ThemeToggle from './components/ThemeToggle'
+import SignInModal, { useAuth } from './components/SignInModal'
 import { useAnalysis } from './hooks/useAnalysis'
 import { useComparison } from './hooks/useComparison'
+import type { AnalysisAction } from './hooks/useAnalysis'
 
 const TABS = [
   { id: 'contradictions', label: 'Contradictions' },
@@ -18,10 +20,14 @@ const TABS = [
 ] as const
 
 export default function App() {
-  const { step, sessionId, results, error, run, reset } = useAnalysis()
+  const { step, sessionId, results, error, action, run, reset } = useAnalysis()
   const [activeTab, setActiveTab] = useState<'contradictions' | 'comparison' | 'chat'>('contradictions')
   const { comparison, loadingComparison, messages, loadingChat, runComparison, sendMessage } = useComparison(sessionId)
   const [scrolled, setScrolled] = useState(false)
+  const [showSignIn, setShowSignIn] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const { user, signIn, signOut } = useAuth()
+  const didAutoCompare = useRef(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -29,8 +35,27 @@ export default function App() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // When comparison flow completes upload, auto-switch tab and run comparison
+  useEffect(() => {
+    if (step === 'complete' && action === 'comparison' && !didAutoCompare.current) {
+      didAutoCompare.current = true
+      setActiveTab('comparison')
+      runComparison()
+    }
+    if (step === 'idle') didAutoCompare.current = false
+  }, [step, action, runComparison])
+
+  function handleSubmit(files: File[], selectedAction: AnalysisAction) {
+    setActiveTab('contradictions')
+    run(files, selectedAction)
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 relative overflow-x-hidden transition-colors">
+
+      {showSignIn && (
+        <SignInModal onClose={() => setShowSignIn(false)} onSignIn={signIn} />
+      )}
 
       {/* Decorative background blobs */}
       <div className="pointer-events-none fixed inset-0 -z-10">
@@ -57,20 +82,45 @@ export default function App() {
           <div className="flex items-center gap-2">
             {step === 'complete' && (
               <button
-                onClick={reset}
+                onClick={() => { reset(); didAutoCompare.current = false }}
                 className="text-xs font-medium text-gray-700 dark:text-neutral-300 hover:bg-gray-50 dark:hover:bg-neutral-800 border border-gray-200 dark:border-neutral-800 px-3.5 py-1.5 rounded-full transition-all"
               >
                 New analysis
               </button>
             )}
             <ThemeToggle />
-            <a
-              href="#"
-              onClick={e => e.preventDefault()}
-              className="text-xs font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-neutral-200 px-3.5 py-1.5 rounded-full transition-all"
-            >
-              Sign in
-            </a>
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(v => !v)}
+                  className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-neutral-300 hover:bg-gray-50 dark:hover:bg-neutral-800 border border-gray-200 dark:border-neutral-800 px-3 py-1.5 rounded-full transition-all"
+                >
+                  <div className="w-5 h-5 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center">
+                    <span className="text-white dark:text-gray-900 text-[9px] font-semibold uppercase">
+                      {user.email[0]}
+                    </span>
+                  </div>
+                  <span className="max-w-[120px] truncate">{user.email}</span>
+                </button>
+                {showUserMenu && (
+                  <div className="absolute right-0 top-10 bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 rounded-2xl shadow-lg p-1 w-36 animate-fade-in">
+                    <button
+                      onClick={() => { signOut(); setShowUserMenu(false) }}
+                      className="w-full text-left text-xs text-gray-700 dark:text-neutral-300 hover:bg-gray-50 dark:hover:bg-neutral-800 px-4 py-2.5 rounded-xl transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSignIn(true)}
+                className="text-xs font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white hover:bg-gray-700 dark:hover:bg-neutral-200 px-3.5 py-1.5 rounded-full transition-all"
+              >
+                Sign in
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -127,7 +177,7 @@ export default function App() {
 
             <Reveal delay={180}>
               <div className="max-w-2xl mx-auto w-full">
-                <UploadPanel onSubmit={run} disabled={false} />
+                <UploadPanel onSubmit={handleSubmit} disabled={false} />
               </div>
             </Reveal>
 
@@ -182,12 +232,14 @@ export default function App() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <p className="text-base font-medium text-gray-900 dark:text-neutral-100 tracking-tight">
-                {step === 'uploading' ? 'Uploading documents' : 'Analyzing contradictions'}
+                {step === 'uploading' ? 'Uploading documents' : (action === 'comparison' ? 'Preparing comparison' : 'Analyzing contradictions')}
               </p>
               <p className="text-sm text-gray-400 dark:text-neutral-500 font-normal">
                 {step === 'uploading'
-                  ? 'Sending files to server'
-                  : 'Extracting clauses · Generating embeddings · Cross-checking'}
+                  ? 'Extracting clauses · Generating embeddings'
+                  : action === 'comparison'
+                    ? 'Processing documents for comparison'
+                    : 'Cross-checking clause pairs with GPT-4o'}
               </p>
             </div>
           </div>
@@ -221,10 +273,6 @@ export default function App() {
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-medium uppercase tracking-widest text-gray-400 dark:text-neutral-500">Analysis ready</p>
                   <h2 className="text-4xl font-semibold tracking-tight text-gray-900 dark:text-neutral-100">Your contract review</h2>
-                </div>
-                <div className="hidden md:flex items-center gap-2 text-xs text-gray-400 dark:text-neutral-500">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Live session
                 </div>
               </div>
             </Reveal>

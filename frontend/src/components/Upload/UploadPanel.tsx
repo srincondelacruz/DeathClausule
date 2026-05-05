@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { DragEvent } from 'react'
 
 interface Props {
-  onSubmit: (files: File[]) => void
+  onSubmit: (files: File[], action: 'contradictions' | 'comparison') => void
   disabled: boolean
 }
 
@@ -96,18 +96,32 @@ export default function UploadPanel({ onSubmit, disabled }: Props) {
         </ul>
       )}
 
-      {/* Submit */}
-      <button
-        onClick={() => files.length > 0 && onSubmit(files)}
-        disabled={disabled || files.length === 0}
-        className="group w-full py-4 rounded-2xl bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-neutral-200 text-white dark:text-gray-900 font-medium text-sm tracking-tight transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gray-900 dark:disabled:hover:bg-white hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2"
-      >
-        <span>Analyze Contradictions</span>
-        {files.length > 0 && <span className="opacity-60 font-normal">· {files.length} file{files.length !== 1 ? 's' : ''}</span>}
-        <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-        </svg>
-      </button>
+      {/* Submit — two actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => files.length > 0 && onSubmit(files, 'contradictions')}
+          disabled={disabled || files.length === 0}
+          className="group py-4 rounded-2xl bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-neutral-200 text-white dark:text-gray-900 font-medium text-sm tracking-tight transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gray-900 dark:disabled:hover:bg-white hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span>Find Contradictions</span>
+        </button>
+        <button
+          onClick={() => files.length > 0 && onSubmit(files, 'comparison')}
+          disabled={disabled || files.length < 2}
+          className="group py-4 rounded-2xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-neutral-100 font-medium text-sm tracking-tight transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l-4 4 4 4M16 7l4 4-4 4" />
+          </svg>
+          <span>Compare Contracts</span>
+        </button>
+      </div>
+      {files.length === 1 && (
+        <p className="text-center text-xs text-gray-400 dark:text-neutral-500">Upload at least 2 files to compare</p>
+      )}
     </div>
   )
 }
