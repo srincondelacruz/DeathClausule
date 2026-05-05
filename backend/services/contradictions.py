@@ -31,6 +31,7 @@ Return a JSON object with:
 - "severity": integer from 1 to 10 (only relevant if contradiction is true, else 0)
 
 A contradiction exists when following both clauses simultaneously is impossible or creates a legal conflict.
+Respond in the same language as the clauses above.
 """
     response = client.chat.completions.create(
         model=os.getenv("AZURE_OPENAI_DEPLOYMENT_GPT4O", "gpt-4o"),

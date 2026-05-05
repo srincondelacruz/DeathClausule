@@ -1,5 +1,6 @@
 import os
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import AzureOpenAI
 from models.schemas import (
     Clause, GraphNode, SimilarPair,
@@ -27,24 +28,48 @@ def _clause_to_node(c: Clause) -> GraphNode:
     )
 
 
+def _get_differences(clause: Clause, candidate: dict) -> str:
+    client = get_azure_client()
+    b_meta = candidate["metadata"]
+    prompt = f"""Compare these two contract clauses and explain their differences concisely (2-3 sentences).
+Focus on what each clause says differently, not on their similarities.
+
+Clause A ({clause.doc_name}, {clause.clause_number}):
+{clause.text}
+
+Clause B ({b_meta.get('doc_name', '')}, {b_meta.get('clause_number', '')}):
+{candidate['text']}
+
+Return a JSON object with:
+- "differences": explanation of how they differ
+Respond in the same language as the clauses above.
+"""
+    response = client.chat.completions.create(
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT_GPT4O", "gpt-4o"),
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0,
+    )
+    result = json.loads(response.choices[0].message.content or "{}")
+    return result.get("differences", "")
+
+
 def find_exclusive_and_similar(
     session_id: str,
     clauses_a: list[Clause],
     clauses_b: list[Clause],
 ) -> tuple[list[GraphNode], list[GraphNode], list[SimilarPair]]:
-    MATCH_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.75"))
+    MATCH_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.55"))
     distance_threshold = 1 - MATCH_THRESHOLD
 
     embeddings_a = generate_embeddings(clauses_a)
     matched_a: set[str] = set()
     matched_b: set[str] = set()
-    similar_pairs: list[SimilarPair] = []
     checked_pairs: set[frozenset] = set()
-
-    client = get_azure_client()
+    pending: list[tuple[Clause, dict]] = []
 
     for clause, embedding in zip(clauses_a, embeddings_a):
-        candidates = query_similar(session_id, embedding, exclude_doc_id=clause.doc_id, top_n=3)
+        candidates = query_similar(session_id, embedding, exclude_clause_id=clause.id, exclude_doc_id=clause.doc_id, top_n=3)
         for candidate in candidates:
             if candidate["distance"] > distance_threshold:
                 continue
@@ -54,40 +79,27 @@ def find_exclusive_and_similar(
             checked_pairs.add(pair)
             matched_a.add(clause.id)
             matched_b.add(candidate["id"])
+            pending.append((clause, candidate))
 
-            prompt = f"""Compare these two contract clauses and explain their differences concisely (2-3 sentences).
-Focus on what each clause says differently, not on their similarities.
-
-Clause A ({clause.doc_name}, {clause.clause_number}):
-{clause.text}
-
-Clause B ({candidate['metadata'].get('doc_name', '')}, {candidate['metadata'].get('clause_number', '')}):
-{candidate['text']}
-
-Return a JSON object with:
-- "differences": explanation of how they differ
-"""
-            response = client.chat.completions.create(
-                model=os.getenv("AZURE_OPENAI_DEPLOYMENT_GPT4O", "gpt-4o"),
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-                temperature=0,
-            )
-            content = response.choices[0].message.content or "{}"
-            result = json.loads(content)
-            b_meta = candidate["metadata"]
-            similar_pairs.append(SimilarPair(
-                clause_a=_clause_to_node(clause),
-                clause_b=GraphNode(
-                    id=candidate["id"],
-                    doc=b_meta.get("doc_name", ""),
-                    number=b_meta.get("clause_number", ""),
-                    title=b_meta.get("clause_title", ""),
-                    text=candidate["text"],
-                ),
-                similarity_score=round(1 - candidate["distance"], 3),
-                differences=result.get("differences", ""),
-            ))
+    similar_pairs: list[SimilarPair] = []
+    if pending:
+        with ThreadPoolExecutor(max_workers=min(10, len(pending))) as executor:
+            futures = {executor.submit(_get_differences, clause, candidate): (clause, candidate) for clause, candidate in pending}
+            for future in as_completed(futures):
+                clause, candidate = futures[future]
+                b_meta = candidate["metadata"]
+                similar_pairs.append(SimilarPair(
+                    clause_a=_clause_to_node(clause),
+                    clause_b=GraphNode(
+                        id=candidate["id"],
+                        doc=b_meta.get("doc_name", ""),
+                        number=b_meta.get("clause_number", ""),
+                        title=b_meta.get("clause_title", ""),
+                        text=candidate["text"],
+                    ),
+                    similarity_score=round(1 - candidate["distance"], 3),
+                    differences=future.result(),
+                ))
 
     exclusive_a = [_clause_to_node(c) for c in clauses_a if c.id not in matched_a]
     exclusive_b = [_clause_to_node(c) for c in clauses_b if c.id not in matched_b]
@@ -106,22 +118,22 @@ def generate_executive_summary(
     exclusive_b_text = "\n".join(f"- [{c.number}] {c.title}: {c.text[:200]}..." for c in exclusive_b[:5])
     diffs_text = "\n".join(f"- {p.differences}" for p in similar_pairs[:5])
 
-    prompt = f"""You are a legal analyst. Write a concise executive summary (3-5 paragraphs) comparing two contracts.
+    prompt = f"""Eres un analista legal. Escribe un resumen ejecutivo conciso (3-5 párrafos) comparando dos contratos.
+IMPORTANTE: Responde SIEMPRE en el mismo idioma en que están redactadas las cláusulas. Si las cláusulas están en español, responde en español.
 
-Document A: {doc_a}
-Document B: {doc_b}
+Documento A: {doc_a}
+Documento B: {doc_b}
 
-Clauses only in {doc_a}:
-{exclusive_a_text or 'None'}
+Cláusulas exclusivas de {doc_a}:
+{exclusive_a_text or 'Ninguna'}
 
-Clauses only in {doc_b}:
-{exclusive_b_text or 'None'}
+Cláusulas exclusivas de {doc_b}:
+{exclusive_b_text or 'Ninguna'}
 
-Key differences in shared clauses:
-{diffs_text or 'None'}
+Diferencias clave en cláusulas compartidas:
+{diffs_text or 'Ninguna'}
 
-Write the summary in the same language as the contract clauses above.
-Focus on: overall scope differences, key missing protections, notable conflicts, and practical implications.
+Céntrate en: diferencias de alcance, protecciones ausentes, conflictos notables e implicaciones prácticas.
 """
     response = client.chat.completions.create(
         model=os.getenv("AZURE_OPENAI_DEPLOYMENT_GPT4O", "gpt-4o"),
