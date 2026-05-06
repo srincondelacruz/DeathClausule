@@ -7,7 +7,7 @@ This is a greenfield frontend. The backend is already running at http://localhos
 
 ## Feature Description
 
-Construir el frontend React de DeathClausule: una SPA con tres vistas principales (Upload, Loading/Progress, Results) conectada al backend FastAPI. El flujo es lineal: el usuario sube PDFs → espera el análisis → ve el informe textual de contradicciones. El grafo D3.js se implementará en la Fase 3 — aquí solo se reserva el espacio del componente `<Graph />` con datos mockeados.
+Construir el frontend React de DeathClause: una SPA con tres vistas principales (Upload, Loading/Progress, Results) conectada al backend FastAPI. El flujo es lineal: el usuario sube PDFs → espera el análisis → ve el informe textual de contradicciones. El grafo D3.js se implementará en la Fase 3 — aquí solo se reserva el espacio del componente `<Graph />` con datos mockeados.
 
 ## User Story
 
@@ -143,7 +143,7 @@ Implementar `UploadPanel`, `GraphPlaceholder`, `ReportPanel`, `ReportEntry` y `A
 - **IMPLEMENT**: Inicializar proyecto React + TypeScript + Tailwind
 
 ```bash
-cd /home/sergio/DeathClausule
+cd /home/sergio/DeathClause
 npm create vite@latest frontend -- --template react-ts
 cd frontend
 npm install
@@ -608,7 +608,7 @@ export default function App() {
   return (
     <main className="min-h-screen p-8 max-w-4xl mx-auto flex flex-col gap-8">
       <header>
-        <h1 className="text-3xl font-bold">DeathClausule</h1>
+        <h1 className="text-3xl font-bold">DeathClause</h1>
         <p className="text-gray-500 mt-1">Legal contradiction detection</p>
       </header>
 

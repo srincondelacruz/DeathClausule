@@ -5,7 +5,7 @@ The repo is greenfield — there are no existing files to mirror patterns from. 
 
 ## Feature Description
 
-Construir el backend completo de DeathClausule: un pipeline FastAPI que recibe PDFs, extrae cláusulas con PyMuPDF + GPT-4o, genera embeddings con Azure OpenAI, los almacena en ChromaDB y detecta contradicciones entre cláusulas de distintos documentos. Expone tres endpoints REST: `/upload`, `/analyze/{session_id}`, `/results/{analysis_id}`.
+Construir el backend completo de DeathClause: un pipeline FastAPI que recibe PDFs, extrae cláusulas con PyMuPDF + GPT-4o, genera embeddings con Azure OpenAI, los almacena en ChromaDB y detecta contradicciones entre cláusulas de distintos documentos. Expone tres endpoints REST: `/upload`, `/analyze/{session_id}`, `/results/{analysis_id}`.
 
 ## User Story
 
@@ -551,7 +551,7 @@ load_dotenv()
 
 from routers import upload, analysis, results
 
-app = FastAPI(title="DeathClausule API", version="1.0.0")
+app = FastAPI(title="DeathClause API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

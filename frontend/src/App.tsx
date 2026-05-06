@@ -145,7 +145,7 @@ export default function App() {
                   Find the conflicts<br />hiding in your contracts.
                 </h2>
                 <p className="text-lg text-gray-500 dark:text-neutral-400 font-normal leading-relaxed max-w-xl">
-                  Upload your PDFs. DeathClausule reads every clause, surfaces contradictions, and explains them in plain language — in seconds.
+                  Upload your PDFs. DeathClause reads every clause, surfaces contradictions, and explains them in plain language — in seconds.
                 </p>
               </div>
             </Reveal>
@@ -326,7 +326,7 @@ export default function App() {
 
       <footer className="border-t border-gray-100 dark:border-neutral-800 py-10">
         <div className="max-w-6xl mx-auto px-8 flex items-center justify-between text-xs text-gray-400 dark:text-neutral-500">
-          <span>© DeathClausule · 2026</span>
+          <span>© DeathClause · 2026</span>
           <div className="flex gap-6">
             <a className="hover:text-gray-900 dark:hover:text-neutral-100 transition-colors" href="#" onClick={e => e.preventDefault()}>Privacy</a>
             <a className="hover:text-gray-900 dark:hover:text-neutral-100 transition-colors" href="#" onClick={e => e.preventDefault()}>Terms</a>

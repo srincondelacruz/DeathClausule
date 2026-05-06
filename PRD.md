@@ -1,10 +1,10 @@
-# PRD — DeathClausule
+# PRD — DeathClause
 
 ## 1. Executive Summary
 
-DeathClausule es una aplicación SaaS de detección automática de contradicciones en documentos legales. El usuario sube dos o más PDFs (contratos, anexos, adendas) y el sistema extrae las cláusulas, genera embeddings semánticos y cruza los documentos para identificar pares de cláusulas que se contradicen entre sí. Los resultados se presentan como un grafo interactivo y un informe textual detallado.
+DeathClause es una aplicación SaaS de detección automática de contradicciones en documentos legales. El usuario sube dos o más PDFs (contratos, anexos, adendas) y el sistema extrae las cláusulas, genera embeddings semánticos y cruza los documentos para identificar pares de cláusulas que se contradicen entre sí. Los resultados se presentan como un grafo interactivo y un informe textual detallado.
 
-El valor diferencial es claro: un abogado o paralegal que revisa manualmente 3 contratos de 50 páginas puede tardar horas. DeathClausule lo hace en segundos, con explicaciones en lenguaje natural de por qué cada par es contradictorio y qué tan grave es la contradicción.
+El valor diferencial es claro: un abogado o paralegal que revisa manualmente 3 contratos de 50 páginas puede tardar horas. DeathClause lo hace en segundos, con explicaciones en lenguaje natural de por qué cada par es contradictorio y qué tan grave es la contradicción.
 
 **MVP goal:** Sistema funcional que procese 2–5 PDFs, detecte contradicciones entre cláusulas de distintos documentos, y presente los resultados en grafo + informe. Desplegable en local.
 
@@ -98,7 +98,7 @@ Automatizar la detección de contradicciones legales entre documentos, reduciend
 
 **Estructura de directorios:**
 ```
-DeathClausule/
+DeathClause/
 ├── backend/
 │   ├── main.py
 │   ├── routers/

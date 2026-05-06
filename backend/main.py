@@ -6,7 +6,7 @@ load_dotenv()
 
 from routers import upload, analysis, results, comparison, chat  # noqa: E402
 
-app = FastAPI(title="DeathClausule API", version="1.0.0")
+app = FastAPI(title="DeathClause API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

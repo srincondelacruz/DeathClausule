@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**DeathClausule** is a legal document contradiction detection system. Users upload PDFs (contracts, annexes, addenda), the system extracts clauses, generates embeddings, and detects semantic contradictions between clauses across documents. Results are presented as an interactive contradiction graph and a detailed textual report.
+**DeathClause** is a legal document contradiction detection system. Users upload PDFs (contracts, annexes, addenda), the system extracts clauses, generates embeddings, and detects semantic contradictions between clauses across documents. Results are presented as an interactive contradiction graph and a detailed textual report.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ Upload PDFs → Clause Extraction → Embeddings → ChromaDB → Semantic Cross
 ## Project Structure (target)
 
 ```
-DeathClausule/
+DeathClause/
 ├── backend/
 │   ├── main.py               # FastAPI app entry point
 │   ├── routers/              # upload, analysis, results endpoints

@@ -15,7 +15,7 @@ export default function Logo({ size = 28, className = '' }: Props) {
       strokeLinecap="round"
       xmlns="http://www.w3.org/2000/svg"
       className={`text-gray-900 dark:text-white ${className}`}
-      aria-label="DeathClausule logo"
+      aria-label="DeathClause logo"
     >
       {/* Two clause lines */}
       <line x1="4" y1="9" x2="20" y2="9" />
@@ -30,7 +30,7 @@ export function Wordmark({ className = '' }: { className?: string }) {
   return (
     <span className={`font-semibold tracking-tight ${className}`}>
       <span className="text-gray-900 dark:text-neutral-100">Death</span>
-      <span className="wordmark-shimmer">Clausule</span>
+      <span className="wordmark-shimmer">Clause</span>
     </span>
   )
 }

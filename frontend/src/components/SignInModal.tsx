@@ -56,7 +56,7 @@ export default function SignInModal({ onClose, onSignIn }: Props) {
       <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-neutral-800 p-8 w-full max-w-sm mx-4 flex flex-col gap-6 animate-slide-up">
         <div className="flex flex-col gap-1.5">
           <h2 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-neutral-100">Sign in</h2>
-          <p className="text-sm text-gray-400 dark:text-neutral-500">Access your DeathClausule workspace</p>
+          <p className="text-sm text-gray-400 dark:text-neutral-500">Access your DeathClause workspace</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

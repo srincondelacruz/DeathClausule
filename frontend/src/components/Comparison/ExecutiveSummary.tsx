@@ -31,7 +31,7 @@ function downloadSummary(summary: string, docA: string, docB: string) {
   </header>
   <main id="content"></main>
   <footer>
-    <span>DeathClausule · Análisis de contratos con IA</span>
+    <span>DeathClause · Análisis de contratos con IA</span>
     <span>${date}</span>
   </footer>
   <script>

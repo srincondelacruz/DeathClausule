@@ -1,8 +1,8 @@
-# DeathClausule
+# DeathClause
 
 **Detección inteligente de contradicciones y comparación de contratos mediante IA Generativa.**
 
-DeathClausule es una aplicación SaaS full-stack que permite a equipos legales y empresas analizar contratos en segundos. Sube uno o varios PDFs y la plataforma extrae automáticamente las cláusulas, las vectoriza y aplica un motor semántico para detectar contradicciones internas o diferencias críticas entre documentos — todo explicado en lenguaje natural.
+DeathClause es una aplicación SaaS full-stack que permite a equipos legales y empresas analizar contratos en segundos. Sube uno o varios PDFs y la plataforma extrae automáticamente las cláusulas, las vectoriza y aplica un motor semántico para detectar contradicciones internas o diferencias críticas entre documentos — todo explicado en lenguaje natural.
 
 ---
 
@@ -64,7 +64,7 @@ Backend (FastAPI)
 ## Estructura del proyecto
 
 ```
-DeathClausule/
+DeathClause/
 ├── backend/
 │   ├── main.py                  # FastAPI entry point + CORS
 │   ├── routers/
@@ -113,8 +113,8 @@ DeathClausule/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/srincondelacruz/DeathClausule.git
-cd DeathClausule
+git clone https://github.com/srincondelacruz/DeathClause.git
+cd DeathClause
 ```
 
 ### 2. Configurar el backend

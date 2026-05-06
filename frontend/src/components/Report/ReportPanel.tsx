@@ -74,7 +74,7 @@ function downloadReport(entries: ReportEntryType[]) {
   </header>
   ${rows}
   <footer>
-    <span>DeathClausule · Análisis de contratos con IA</span>
+    <span>DeathClause · Análisis de contratos con IA</span>
     <span>${date}</span>
   </footer>
   <script>window.print()</script>
